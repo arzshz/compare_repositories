@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repository Comparison</title>
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .helper-text {
+            color: #888;
+            font-size: 12px;
+            margin-top: 8px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .status.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+
+        .example-links {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .example-links h3 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .example-links a {
+            color: #667eea;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px 10px 5px 0;
+            font-size: 13px;
+        }
+
+        .example-links a:hover {
+            text-decoration: underline;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #0c5460;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .api-link {
+            margin-top: 20px;
+            padding: 10px;
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .api-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .api-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Result section */
+        #resultSection {
+            display: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+        }
+
+        .btn-view {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-new {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        /* Markdown viewer */
+        #markdownViewer {
+            display: none;
+        }
+
+        .markdown-content {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .markdown-content h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .markdown-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+            background: white;
+        }
+
+        .markdown-content th,
+        .markdown-content td {
+            border: 1px solid #ddd;
+            padding: 12px 8px;
+            text-align: left;
+        }
+
+        .markdown-content th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .markdown-content tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .markdown-content tr:hover {
+            background: #e9ecef;
+        }
+
+        .markdown-content a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .markdown-content a:hover {
+            text-decoration: underline;
+        }
+
+        .close-viewer {
+            display: block;
+            margin: 20px auto 0;
+            width: auto;
+            padding: 10px 30px;
+            background: #6c757d;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-buttons button {
+                width: 100%;
+            }
+
+            .markdown-content {
+                padding: 15px;
+                font-size: 12px;
+            }
+
+            .markdown-content table {
+                font-size: 11px;
+            }
+
+            .markdown-content th,
+            .markdown-content td {
+                padding: 8px 4px;
+            }
+
+            .example-links a {
+                display: block;
+                margin: 8px 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 20px;
+            }
+
+            .subtitle {
+                font-size: 13px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 12px 24px;
+            }
+
+            .markdown-content {
+                padding: 10px;
+                max-height: 400px;
+            }
+
+            .markdown-content table {
+                font-size: 10px;
+            }
+
+            .markdown-content th,
+            .markdown-content td {
+                padding: 6px 3px;
+            }
+        }
+
+        /* Tablet landscape */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Input Form Section -->
+    <div class="card" id="inputSection">
+        <h1>🔍 GitHub Repository Comparison</h1>
+        <p class="subtitle">Compare multiple GitHub repositories and download a detailed markdown comparison table</p>
+
+        <form id="compareForm">
+            <label for="repositories">Repository URLs (one per line):</label>
+            <textarea
+                    id="repositories"
+                    name="repositories"
+                    placeholder="https://github.com/owner1/repo1&#10;https://github.com/owner2/repo2&#10;https://github.com/owner3/repo3"
+                    required
+            ></textarea>
+            <p class="helper-text">Enter GitHub repository URLs, one per line. Maximum 20 repositories.</p>
+
+            <button type="submit" id="submitBtn">
+                Compare Repositories
+            </button>
+        </form>
+
+        <div id="status" class="status"></div>
+
+        <div class="example-links">
+            <h3>📚 Example Popular Repositories:</h3>
+            <a href="#" onclick="fillExample('python-frameworks'); return false;">Python Web Frameworks</a>
+            <a href="#" onclick="fillExample('js-frameworks'); return false;">JavaScript Frameworks</a>
+            <a href="#" onclick="fillExample('data-science'); return false;">Data Science Tools</a>
+            <a href="#" onclick="fillExample('ai-ml'); return false;">AI/ML Libraries</a>
+        </div>
+
+        <div class="api-link">
+            <a href="/docs" target="_blank">📖 API Documentation</a>
+        </div>
+    </div>
+
+    <!-- Result Section -->
+    <div class="card" id="resultSection">
+        <h1>✅ Comparison Complete!</h1>
+        <p class="subtitle" id="resultSubtitle"></p>
+
+        <div class="action-buttons">
+            <button class="btn-view" id="viewBtn" onclick="showMarkdown()">
+                👁️ View Markdown
+            </button>
+            <button class="btn-download" id="downloadBtn" onclick="downloadMarkdown()">
+                ⬇️ Download File
+            </button>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-new" onclick="startNew()">
+                🔄 Compare New Repositories
+            </button>
+        </div>
+    </div>
+
+    <!-- Markdown Viewer -->
+    <div class="card" id="markdownViewer">
+        <h1>📄 Markdown Preview</h1>
+        <div class="markdown-content" id="markdownContent"></div>
+        <button class="close-viewer" onclick="closeViewer()">Close Preview</button>
+    </div>
+</div>
+
+<script>
+    let currentMarkdown = '';
+    let currentFilename = '';
+
+    // API endpoint
+    const API_URL = '/compare-json';
+
+    // Example repository sets
+    const examples = {
+        'python-frameworks': [
+            'https://github.com/fastapi/fastapi',
+            'https://github.com/django/django',
+            'https://github.com/pallets/flask',
+            'https://github.com/tornadoweb/tornado'
+        ],
+        'js-frameworks': [
+            'https://github.com/facebook/react',
+            'https://github.com/vuejs/vue',
+            'https://github.com/angular/angular',
+            'https://github.com/sveltejs/svelte'
+        ],
+        'data-science': [
+            'https://github.com/pandas-dev/pandas',
+            'https://github.com/numpy/numpy',
+            'https://github.com/matplotlib/matplotlib',
+            'https://github.com/scikit-learn/scikit-learn'
+        ],
+        'ai-ml': [
+            'https://github.com/pytorch/pytorch',
+            'https://github.com/tensorflow/tensorflow',
+            'https://github.com/keras-team/keras',
+            'https://github.com/huggingface/transformers'
+        ]
+    };
+
+    // Fill textarea with example
+    function fillExample(exampleKey) {
+        const repos = examples[exampleKey];
+        document.getElementById('repositories').value = repos.join('\n');
+    }
+
+    // Show markdown in viewer
+    function showMarkdown() {
+        const viewer = document.getElementById('markdownViewer');
+        const content = document.getElementById('markdownContent');
+
+        // Render markdown to HTML using marked.js
+        content.innerHTML = marked.parse(currentMarkdown);
+
+        viewer.style.display = 'block';
+        viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Close markdown viewer
+    function closeViewer() {
+        document.getElementById('markdownViewer').style.display = 'none';
+        document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Download markdown file
+    function downloadMarkdown() {
+        const blob = new Blob([currentMarkdown], { type: 'text/markdown' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = currentFilename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        // Show feedback
+        const status = document.getElementById('status');
+        status.className = 'status success';
+        status.textContent = '✅ File downloaded successfully!';
+        setTimeout(() => {
+            status.style.display = 'none';
+        }, 3000);
+    }
+
+    // Start new comparison
+    function startNew() {
+        document.getElementById('inputSection').style.display = 'block';
+        document.getElementById('resultSection').style.display = 'none';
+        document.getElementById('markdownViewer').style.display = 'none';
+        document.getElementById('repositories').value = '';
+        document.getElementById('status').style.display = 'none';
+
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Navigate back to main URL
+        window.location.href = '/';
+    }
+
+    // Handle form submission
+    document.getElementById('compareForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const button = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+        const repositories = document.getElementById('repositories').value;
+
+        // Disable button and show loading
+        button.disabled = true;
+        button.textContent = 'Comparing...';
+        status.className = 'status loading';
+        status.innerHTML = '<span class="spinner"></span>Fetching repository data from GitHub... This may take a moment.';
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ repositories })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP ${response.status}`);
+            }
+
+            // Get the JSON response
+            const data = await response.json();
+
+            // Store markdown content
+            currentMarkdown = data.markdown;
+            currentFilename = data.filename;
+
+            // Hide input section
+            document.getElementById('inputSection').style.display = 'none';
+
+            // Show result section
+            const resultSection = document.getElementById('resultSection');
+            const resultSubtitle = document.getElementById('resultSubtitle');
+
+            resultSubtitle.textContent = `Successfully compared ${data.repo_count} repositories!`;
+            resultSection.style.display = 'block';
+            resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        } catch (error) {
+            // Show error
+            status.className = 'status error';
+            status.innerHTML = `❌ Error: ${error.message}`;
+
+            // Re-enable button
+            button.disabled = false;
+            button.textContent = 'Compare Repositories';
+        }
+    });
+
+    // Configure marked.js options
+    marked.setOptions({
+        breaks: true,
+        gfm: true
+    });
+</script>
+</body>
+</html>
