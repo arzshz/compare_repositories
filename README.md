@@ -41,13 +41,13 @@ A FastAPI-based REST API that compares multiple GitHub repositories and generate
    ```
 
 3. **(Optional) Set GitHub Personal Access Token:**
-   
+
    For higher rate limits (5000 requests/hour vs 60 for unauthenticated):
-   
+
    ```bash
    export GITHUB_TOKEN="your_github_token_here"
    ```
-   
+
    You can create a token at: https://github.com/settings/tokens
 
 ## Usage
@@ -153,30 +153,33 @@ The API returns a markdown file (`.md`) that can be downloaded. The filename for
 
 The generated markdown table looks like this:
 
-| Repo Name | Owner Name | Is Forked? | Stars Count | Forks Count | Watchers Count | License | Programming Language | Contributors Count | Commits Count | First Commit Date | Last Commit Date (main branch) | Last Commit Date (all branches) | Releases Count | Last Release Date | Has README |
-|-----------|------------|------------|-------------|-------------|----------------|---------|---------------------|-------------------|---------------|-------------------|-------------------------------|--------------------------------|----------------|-------------------|------------|
-| [fastapi](https://github.com/fastapi/fastapi) | fastapi | No | 65000 | 5500 | 1200 | MIT | Python 95.2% | 450 | 2500 | 2018-12-08 | 2 days ago | 1 day ago | 150 | 2024-01-15 | Has README |
+| Repo Name | Owner Name | Is Forked? | Stars Count | Forks Count | Watchers Count | License | Programming Language | Contributors Count | Open Issues | Closed Issues | Used By | Commits Count | First Commit Date | Last Commit Date (main branch) | Last Commit Date (all branches) | Releases Count  | Last Release Date | Has README |
+|-----------|------------|------------|-------------|-------------|----------------|---------|---------------------|--------------------|------------|---------------|---------|---------------|-------------------|-------------------------------|---------------------------------|-----------------|-------------------|------------|
+| [fastapi](https://github.com/fastapi/fastapi) | fastapi | No | 95129 | 8690 | 730 | MIT | Python 100.0% | 898 | 12 | 3491 | 844998 | 6789 | 2018-12-05 | 2 days ago | 2 days ago | 258 | 2026-02-12 | Has README |
 
 ## Comparison Table Columns
 
-| Column | Description |
-|--------|-------------|
-| Repo Name | Clickable link to the GitHub repository |
-| Owner Name | Name of the repository owner |
-| Is Forked? | Whether this repo is forked from another repo (Yes/No) |
-| Stars Count | Number of stars |
-| Forks Count | Number of forks |
-| Watchers Count | Number of watchers |
-| License | License type (e.g., MIT, Apache-2.0) |
-| Programming Language | Calculated using the smart algorithm |
-| Contributors Count | Number of contributors |
-| Commits Count | Total number of commits |
-| First Commit Date | Date of first commit (YYYY-MM-DD) |
-| Last Commit Date (main branch) | Most recent commit on main/master branch (relative format) |
-| Last Commit Date (all branches) | Most recent commit across all branches (relative format) |
-| Releases Count | Number of published releases |
-| Last Release Date | Date of last release (YYYY-MM-DD) |
-| Has README | README status (No README / Default content / Has README) |
+| Column                          | Description                                                |
+|---------------------------------|------------------------------------------------------------|
+| Repo Name                       | Clickable link to the GitHub repository                    |
+| Owner Name                      | Name of the repository owner                               |
+| Is Forked?                      | Whether this repo is forked from another repo (Yes/No)     |
+| Stars Count                     | Number of stars                                            |
+| Forks Count                     | Number of forks                                            |
+| Watchers Count                  | Number of watchers                                         |
+| License                         | License type (e.g., MIT, Apache-2.0)                       |
+| Programming Language            | Calculated using the smart algorithm                       |
+| Contributors Count              | Number of contributors                                     |
+| Open Issues                     | Number of open issues                                      |
+| Closed Issues                   | Number of closed issues                                    |
+| Used By                         | Number of repositories that depend on the repo             |
+| Commits Count                   | Total number of commits                                    |
+| First Commit Date               | Date of first commit (YYYY-MM-DD)                          |
+| Last Commit Date (main branch)  | Most recent commit on main/master branch (relative format) |
+| Last Commit Date (all branches) | Most recent commit across all branches (relative format)   |
+| Releases Count                  | Number of published releases                               |
+| Last Release Date               | Date of last release (YYYY-MM-DD)                          |
+| Has README                      | README status (No README / Default content / Has README)   |
 
 ## Limitations
 

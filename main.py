@@ -293,6 +293,45 @@ class GitHubAPIClient:
 
             return "No README"
 
+    async def issues_count(self, owner: str, repo: str) -> dict:
+        async with httpx.AsyncClient(headers=self.headers, timeout=30.0) as client:
+
+            async def _count(state: str) -> int:
+                q = f"repo:{owner}/{repo} is:issue is:{state}"
+                params = {"q": q, "per_page": 1}
+                r = await client.get(f"{self.base_url}/search/issues", params=params)
+                r.raise_for_status()
+                return r.json().get("total_count", 0)
+
+            open_count, closed_count = await asyncio.gather(
+                _count("open"), _count("closed")
+            )
+            return {"open": open_count, "closed": closed_count}
+
+    @staticmethod
+    async def count_used_by(owner: str, repo: str) -> Optional[int]:
+        url = f"https://github.com/{owner}/{repo}/network/dependents?dependent_type=REPOSITORY"
+        headers = {"User-Agent": "python-httpx"}
+        async with httpx.AsyncClient(headers=headers, timeout=30.0) as client:
+            r = await client.get(url)
+            if r.status_code != 200:
+                return 0
+            doc = html.fromstring(r.text)
+            # find the selected link under the Box-header that shows the Repositories count
+            texts = doc.xpath(
+                '//div[@class="Box-header"]//a[contains(@href,"/network/dependents") and contains(.,"Repositories") and contains(@class,"selected")]//text()'
+            )
+            if not texts:
+                # fallback: any dependents repo link
+                texts = doc.xpath(
+                    '//a[contains(@href,"/network/dependents") and contains(.,"Repositories")]//text()'
+                )
+            combined = " ".join(t.strip() for t in texts if t.strip())
+            m = re.search(r"([\d,]+)\s*Repositories", combined)
+            if not m:
+                m = re.search(r"([\d,]+)", combined)
+            return int(m.group(1).replace(",", "")) if m else 0
+
 
 def parse_repository_url(url: str) -> tuple[str, str] | None:
     try:
@@ -420,12 +459,16 @@ async def fetch_repository_data(
             commits_info,
             releases_info,
             readme_status,
+            issues_count,
+            used_by_count,
         ) = await asyncio.gather(
             github_client.get_repo_info(owner, repo),
             github_client.get_languages(owner, repo),
             github_client.get_commits_info(owner, repo),
             github_client.get_releases_info(owner, repo),
             github_client.get_readme_status(owner, repo),
+            github_client.issues_count(owner, repo),
+            github_client.count_used_by(owner, repo),
         )
 
         # Get contributors count separately
@@ -449,6 +492,9 @@ async def fetch_repository_data(
             else "N/A",
             "language": calculate_programming_language(languages),
             "contributors": contributors_count,
+            "open_issues": issues_count["open"],
+            "closed_issues": issues_count["closed"],
+            "used_by": used_by_count,
             "commits": commits_info["commits_count"],
             "first_commit": format_date(commits_info["first_commit_date"]),
             "last_commit_main": format_relative_date(commits_info["last_commit_date"]),
@@ -466,8 +512,8 @@ def generate_markdown_table(repos_data: List[dict]) -> str:
     """Generate markdown comparison table"""
     # Build table header
     markdown = "# GitHub Repository Comparison\n\n"
-    markdown += "| Repo Name | Owner Name | Is Forked? | Stars Count | Forks Count | Watchers Count | License | Programming Language | Contributors Count | Commits Count | First Commit Date | Last Commit Date (main branch) | Last Commit Date (all branches) | Releases Count | Last Release Date | Has README |\n"
-    markdown += "|-----------|------------|------------|-------------|-------------|----------------|---------|---------------------|-------------------|---------------|-------------------|-------------------------------|--------------------------------|----------------|-------------------|------------|\n"
+    markdown += "| Repo Name | Owner Name | Is Forked? | Stars Count | Forks Count | Watchers Count | License | Programming Language | Contributors Count | Open Issues  | Closed Issues | Used By | Commits Count | First Commit Date | Last Commit Date (main branch) | Last Commit Date (all branches) | Releases Count | Last Release Date | Has README |\n"
+    markdown += "|-----------|------------|------------|-------------|-------------|----------------|---------|---------------------|-------------------|---------------|---------------|---------|---------------|-------------------|-------------------------------|--------------------------------|----------------|-------------------|------------|\n"
 
     # Add rows
     for repo in repos_data:
@@ -475,7 +521,7 @@ def generate_markdown_table(repos_data: List[dict]) -> str:
             # Show error row
             markdown += f"| [{repo['name']}]({repo['url']}) | ERROR | {repo['error']} | - | - | - | - | - | - | - | - | - | - | - | - | - |\n"
         else:
-            markdown += f"| [{repo['name']}]({repo['url']}) | {repo['owner']} | {repo['is_forked']} | {repo['stars']} | {repo['forks']} | {repo['watchers']} | {repo['license']} | {repo['language']} | {repo['contributors']} | {repo['commits']} | {repo['first_commit']} | {repo['last_commit_main']} | {repo['last_commit_all']} | {repo['releases']} | {repo['last_release']} | {repo['readme']} |\n"
+            markdown += f"| [{repo['name']}]({repo['url']}) | {repo['owner']} | {repo['is_forked']} | {repo['stars']} | {repo['forks']} | {repo['watchers']} | {repo['license']} | {repo['language']} | {repo['contributors']} | {repo['open_issues']} | {repo['closed_issues']} | {repo['used_by']} | {repo['commits']} | {repo['first_commit']} | {repo['last_commit_main']} | {repo['last_commit_all']} | {repo['releases']} | {repo['last_release']} | {repo['readme']} |\n"
 
     return markdown
 
