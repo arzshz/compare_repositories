@@ -10,6 +10,8 @@ from fastapi.responses import FileResponse, HTMLResponse
 from lxml import html
 from pydantic import BaseModel
 
+from config import GITHUB_TOKEN
+
 app = FastAPI(title="GitHub Repository Comparison API")
 
 
@@ -573,8 +575,7 @@ async def compare_repositories(request: RepositoryRequest):
             raise HTTPException(status_code=400, detail=str(e))
 
     # Initialize GitHub client
-    # github_client = GitHubAPIClient(token=os.getenv("GITHUB_TOKEN"))
-    github_client = GitHubAPIClient(token="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")
+    github_client = GitHubAPIClient(GITHUB_TOKEN)
 
     # Fetch data for all repositories
     tasks = [
@@ -623,7 +624,7 @@ async def compare_repositories_json(request: RepositoryRequest):
             raise HTTPException(status_code=400, detail=str(e))
 
     # Initialize GitHub client
-    github_client = GitHubAPIClient(os.getenv("GITHUB_TOKEN"))
+    github_client = GitHubAPIClient(GITHUB_TOKEN)
 
     # Fetch data for all repositories
     tasks = [

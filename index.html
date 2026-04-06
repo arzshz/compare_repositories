@@ -98,6 +98,7 @@
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
         }
 
         .status {
@@ -148,6 +149,7 @@
             display: inline-block;
             margin: 5px 10px 5px 0;
             font-size: 13px;
+            cursor: pointer;
         }
 
         .example-links a:hover {
@@ -189,18 +191,17 @@
             display: none;
         }
 
-        .action-buttons {
+        /* Two buttons in a row */
+        .button-row {
             display: flex;
             gap: 15px;
             margin-top: 20px;
+            margin-bottom: 10px;
         }
 
-        .action-buttons button {
+        .button-row button {
             flex: 1;
-        }
-
-        .btn-view {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            margin: 0;
         }
 
         .btn-download {
@@ -211,9 +212,36 @@
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
 
-        /* Markdown viewer */
-        #markdownViewer {
-            display: none;
+        /* Markdown preview */
+        #markdownPreview {
+            margin-top: 25px;
+            border-top: 2px solid #e9ecef;
+            padding-top: 20px;
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .preview-header h3 {
+            color: #333;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .preview-badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
         }
 
         .markdown-content {
@@ -223,6 +251,7 @@
             overflow-x: auto;
             max-height: 600px;
             overflow-y: auto;
+            border: 1px solid #e0e0e0;
         }
 
         .markdown-content h1 {
@@ -273,19 +302,93 @@
             text-decoration: underline;
         }
 
-        .close-viewer {
-            display: block;
-            margin: 20px auto 0;
-            width: auto;
-            padding: 10px 30px;
-            background: #6c757d;
+        .empty-preview {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Smooth animated notification */
+        .smooth-notification {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1a1a2e;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            backdrop-filter: blur(12px);
+            background: rgba(26, 26, 46, 0.95);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.3s ease;
+            pointer-events: none;
+            max-width: 90vw;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 640px) {
+            .smooth-notification {
+                white-space: normal;
+                text-align: center;
+                padding: 12px 20px;
+                border-radius: 40px;
+                font-size: 13px;
+                max-width: 85vw;
+                line-height: 1.4;
+            }
+        }
+
+        .smooth-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .smooth-notification.hide {
+            transform: translateX(-50%) translateY(100px);
+            opacity: 0;
+        }
+
+        .smooth-notification .notif-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .smooth-notification.success {
+            background: linear-gradient(135deg, #11998e, #2ecc71);
+            backdrop-filter: none;
+            background: linear-gradient(135deg, #0f9b4e, #2ecc71);
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+        }
+
+        .smooth-notification.error {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            backdrop-filter: none;
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3);
+        }
+
+        .smooth-notification i {
+            font-style: normal;
+            font-size: 16px;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        /* Responsive design */
+        /* Responsive */
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -299,11 +402,12 @@
                 font-size: 24px;
             }
 
-            .action-buttons {
+            .button-row {
                 flex-direction: column;
+                gap: 12px;
             }
 
-            .action-buttons button {
+            .button-row button {
                 width: 100%;
             }
 
@@ -312,54 +416,9 @@
                 font-size: 12px;
             }
 
-            .markdown-content table {
-                font-size: 11px;
-            }
-
-            .markdown-content th,
-            .markdown-content td {
-                padding: 8px 4px;
-            }
-
-            .example-links a {
-                display: block;
-                margin: 8px 0;
-            }
-        }
-
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 20px;
-            }
-
-            .subtitle {
-                font-size: 13px;
-            }
-
-            button {
-                font-size: 14px;
-                padding: 12px 24px;
-            }
-
-            .markdown-content {
-                padding: 10px;
-                max-height: 400px;
-            }
-
-            .markdown-content table {
-                font-size: 10px;
-            }
-
-            .markdown-content th,
-            .markdown-content td {
-                padding: 6px 3px;
-            }
-        }
-
-        /* Tablet landscape */
-        @media (min-width: 768px) and (max-width: 1024px) {
-            .container {
-                max-width: 90%;
+            .preview-header {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
@@ -406,47 +465,42 @@
         <h1>✅ Comparison Complete!</h1>
         <p class="subtitle" id="resultSubtitle"></p>
 
-        <div class="action-buttons">
-            <button class="btn-view" id="viewBtn" onclick="showMarkdown()">
-                👁️ View Markdown
-            </button>
+        <div class="button-row">
             <button class="btn-download" id="downloadBtn" onclick="downloadMarkdown()">
                 ⬇️ Download File
             </button>
-        </div>
-
-        <div class="action-buttons">
-            <button class="btn-new" onclick="startNew()">
+            <button class="btn-new" id="newCompareBtn" onclick="startNew()">
                 🔄 Compare New Repositories
             </button>
         </div>
-    </div>
 
-    <!-- Markdown Viewer -->
-    <div class="card" id="markdownViewer">
-        <h1>📄 Markdown Preview</h1>
-        <div class="markdown-content" id="markdownContent"></div>
-        <button class="close-viewer" onclick="closeViewer()">Close Preview</button>
+        <div id="markdownPreview">
+            <div class="preview-header">
+                <h3>📋 Markdown Preview</h3>
+                <span class="preview-badge">Live Preview</span>
+            </div>
+            <div class="markdown-content" id="markdownContent">
+                <div class="empty-preview">Loading comparison data...</div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
     let currentMarkdown = '';
     let currentFilename = '';
+    let isComparing = false;
+    let activeNotification = null;
 
-    // API endpoint
     const API_URL = '/compare-json';
 
-    // Example repository sets
     const examples = {
         'python-frameworks': [
             'https://github.com/fastapi/fastapi',
-            'https://github.com/django/django',
             'https://github.com/pallets/flask',
             'https://github.com/tornadoweb/tornado'
         ],
         'js-frameworks': [
-            'https://github.com/facebook/react',
             'https://github.com/vuejs/vue',
             'https://github.com/angular/angular',
             'https://github.com/sveltejs/svelte'
@@ -454,8 +508,7 @@
         'data-science': [
             'https://github.com/pandas-dev/pandas',
             'https://github.com/numpy/numpy',
-            'https://github.com/matplotlib/matplotlib',
-            'https://github.com/scikit-learn/scikit-learn'
+            'https://github.com/matplotlib/matplotlib'
         ],
         'ai-ml': [
             'https://github.com/pytorch/pytorch',
@@ -465,32 +518,130 @@
         ]
     };
 
-    // Fill textarea with example
+    // Create smooth notification element
+    function createNotification() {
+        const existing = document.querySelector('.smooth-notification');
+        if (existing) existing.remove();
+
+        const notif = document.createElement('div');
+        notif.className = 'smooth-notification';
+        document.body.appendChild(notif);
+        return notif;
+    }
+
+    // Show notification with smooth animation
+    function showSmoothNotification(message, type = 'loading', autoHide = true, duration = 3000) {
+        // Remove existing notification if present
+        if (activeNotification) {
+            activeNotification.classList.remove('show');
+            activeNotification.classList.add('hide');
+            setTimeout(() => {
+                if (activeNotification && activeNotification.parentNode) {
+                    activeNotification.remove();
+                }
+                activeNotification = null;
+                createAndShow(message, type, autoHide, duration);
+            }, 300);
+        } else {
+            createAndShow(message, type, autoHide, duration);
+        }
+    }
+
+    function createAndShow(message, type, autoHide, duration) {
+        const notif = createNotification();
+        activeNotification = notif;
+
+        // Clear previous classes
+        notif.classList.remove('success', 'error', 'show', 'hide');
+
+        if (type === 'loading') {
+            notif.innerHTML = `<div class="notif-spinner"></div><span>${message}</span>`;
+        } else if (type === 'success') {
+            notif.classList.add('success');
+            notif.innerHTML = `<span>${message}</span>`;
+        } else if (type === 'error') {
+            notif.classList.add('error');
+            notif.innerHTML = `<span>${message}</span>`;
+        }
+
+        // Force reflow to trigger animation
+        notif.offsetHeight;
+        notif.classList.add('show');
+
+        if (autoHide && type !== 'loading') {
+            setTimeout(() => {
+                hideSmoothNotification();
+            }, duration);
+        }
+    }
+
+    function hideSmoothNotification() {
+        if (activeNotification) {
+            activeNotification.classList.remove('show');
+            activeNotification.classList.add('hide');
+            setTimeout(() => {
+                if (activeNotification && activeNotification.parentNode) {
+                    activeNotification.remove();
+                }
+                activeNotification = null;
+            }, 350);
+        }
+    }
+
+    function updateNotificationToSuccess(message) {
+        if (activeNotification) {
+            // Remove loading spinner and transform to success with smooth transition
+            activeNotification.classList.remove('error');
+            activeNotification.classList.add('success');
+            activeNotification.innerHTML = `<span>${message}</span>`;
+            // Keep showing and auto hide after delay
+            setTimeout(() => {
+                hideSmoothNotification();
+            }, 2800);
+        } else {
+            showSmoothNotification(message, 'success', true, 2800);
+        }
+    }
+
+    function updateNotificationToError(message) {
+        if (activeNotification) {
+            activeNotification.classList.remove('success');
+            activeNotification.classList.add('error');
+            activeNotification.innerHTML = `<span>${message}</span>`;
+            setTimeout(() => {
+                hideSmoothNotification();
+            }, 3500);
+        } else {
+            showSmoothNotification(message, 'error', true, 3500);
+        }
+    }
+
     function fillExample(exampleKey) {
         const repos = examples[exampleKey];
         document.getElementById('repositories').value = repos.join('\n');
     }
 
-    // Show markdown in viewer
-    function showMarkdown() {
-        const viewer = document.getElementById('markdownViewer');
-        const content = document.getElementById('markdownContent');
-
-        // Render markdown to HTML using marked.js
-        content.innerHTML = marked.parse(currentMarkdown);
-
-        viewer.style.display = 'block';
-        viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    function renderMarkdownPreview() {
+        const contentDiv = document.getElementById('markdownContent');
+        if (currentMarkdown && currentMarkdown.trim()) {
+            try {
+                const htmlContent = marked.parse(currentMarkdown);
+                contentDiv.innerHTML = htmlContent;
+            } catch (err) {
+                console.error('Markdown rendering error:', err);
+                contentDiv.innerHTML = '<div class="empty-preview">Error rendering markdown preview.</div>';
+            }
+        } else {
+            contentDiv.innerHTML = '<div class="empty-preview">No markdown content available.</div>';
+        }
     }
 
-    // Close markdown viewer
-    function closeViewer() {
-        document.getElementById('markdownViewer').style.display = 'none';
-        document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    // Download markdown file
     function downloadMarkdown() {
+        if (!currentMarkdown) {
+            showSmoothNotification('No markdown content to download. Please compare repositories first.', 'error', true, 3000);
+            return;
+        }
+
         const blob = new Blob([currentMarkdown], { type: 'text/markdown' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -501,43 +652,79 @@
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
-        // Show feedback
-        const status = document.getElementById('status');
-        status.className = 'status success';
-        status.textContent = '✅ File downloaded successfully!';
-        setTimeout(() => {
-            status.style.display = 'none';
-        }, 3000);
+        showSmoothNotification('File downloaded successfully!', 'success', true, 2500);
     }
 
-    // Start new comparison
     function startNew() {
+        // Hide notification if visible
+        hideSmoothNotification();
+
+        // Reset UI
         document.getElementById('inputSection').style.display = 'block';
         document.getElementById('resultSection').style.display = 'none';
-        document.getElementById('markdownViewer').style.display = 'none';
-        document.getElementById('repositories').value = '';
-        document.getElementById('status').style.display = 'none';
 
-        // Scroll to top
+        const textarea = document.getElementById('repositories');
+        if (textarea) textarea.value = '';
+
+        const statusDiv = document.getElementById('status');
+        if (statusDiv) {
+            statusDiv.style.display = 'none';
+            statusDiv.className = 'status';
+            statusDiv.innerHTML = '';
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Compare Repositories';
+        }
+
+        isComparing = false;
+        currentMarkdown = '';
+        currentFilename = '';
+
+        const contentDiv = document.getElementById('markdownContent');
+        if (contentDiv) {
+            contentDiv.innerHTML = '<div class="empty-preview">Ready to compare repositories...</div>';
+        }
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        // Navigate back to main URL
-        window.location.href = '/';
     }
 
-    // Handle form submission
+    // Form submission with smooth notification
     document.getElementById('compareForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        if (isComparing) {
+            showSmoothNotification('Comparison already in progress, please wait...', 'error', true, 2000);
+            return;
+        }
 
         const button = document.getElementById('submitBtn');
         const status = document.getElementById('status');
         const repositories = document.getElementById('repositories').value;
 
-        // Disable button and show loading
+        if (!repositories.trim()) {
+            showSmoothNotification('Please enter at least one repository URL.', 'error', true, 3000);
+            status.className = 'status error';
+            status.innerHTML = 'Please enter at least one repository URL.';
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+            return;
+        }
+
+        isComparing = true;
         button.disabled = true;
-        button.textContent = 'Comparing...';
-        status.className = 'status loading';
-        status.innerHTML = '<span class="spinner"></span>Fetching repository data from GitHub... This may take a moment.';
+        button.textContent = 'Comparing... ⏳';
+
+        // Show loading notification that slides from bottom
+        showSmoothNotification('Fetching GitHub repositories…', 'loading', false);
+
+        // status.className = 'status loading';
+        // status.innerHTML = '<span class="spinner"></span>Fetching repository data from GitHub...';
+        // status.style.display = 'block';
 
         try {
             const response = await fetch(API_URL, {
@@ -549,44 +736,105 @@
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || `HTTP ${response.status}`);
+                let errorMsg = `HTTP ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.detail || errorMsg;
+                } catch (e) {}
+                throw new Error(errorMsg);
             }
 
-            // Get the JSON response
             const data = await response.json();
 
-            // Store markdown content
             currentMarkdown = data.markdown;
             currentFilename = data.filename;
 
-            // Hide input section
+            // Hide input, show result
             document.getElementById('inputSection').style.display = 'none';
-
-            // Show result section
             const resultSection = document.getElementById('resultSection');
             const resultSubtitle = document.getElementById('resultSubtitle');
-
             resultSubtitle.textContent = `Successfully compared ${data.repo_count} repositories!`;
             resultSection.style.display = 'block';
+
+            renderMarkdownPreview();
+            status.style.display = 'none';
+
+            // Transform the loading notification to success with smooth transition
+            // It gracefully changes from loading spinner to green success message at the same bottom position
+            updateNotificationToSuccess(`Successfully compared ${data.repo_count} repositories!`);
+
             resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-        } catch (error) {
-            // Show error
-            status.className = 'status error';
-            status.innerHTML = `❌ Error: ${error.message}`;
-
-            // Re-enable button
             button.disabled = false;
             button.textContent = 'Compare Repositories';
+            isComparing = false;
+
+        } catch (error) {
+            // Transform loading notification to error
+            updateNotificationToError(`Comparison failed: ${error.message}`);
+
+            status.className = 'status error';
+            status.innerHTML = `❌ Error: ${error.message}`;
+            status.style.display = 'block';
+
+            button.disabled = false;
+            button.textContent = 'Compare Repositories';
+            isComparing = false;
+
+            setTimeout(() => {
+                if (status.style.display === 'block') {
+                    status.style.display = 'none';
+                }
+            }, 5000);
         }
     });
 
-    // Configure marked.js options
-    marked.setOptions({
-        breaks: true,
-        gfm: true
+    // Configure marked.js
+    if (typeof marked !== 'undefined') {
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: true,
+            mangle: false
+        });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('inputSection').style.display = 'block';
+        document.getElementById('resultSection').style.display = 'none';
+
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Compare Repositories';
+        }
+
+        isComparing = false;
+
+        const statusDiv = document.getElementById('status');
+        if (statusDiv) {
+            statusDiv.style.display = 'none';
+            statusDiv.className = 'status';
+            statusDiv.innerHTML = '';
+        }
+
+        const contentDiv = document.getElementById('markdownContent');
+        if (contentDiv) {
+            contentDiv.innerHTML = '<div class="empty-preview">Comparison results will appear here...</div>';
+        }
+
+        // Clean up notification on page unload if any
+        window.addEventListener('beforeunload', () => {
+            if (activeNotification) {
+                activeNotification.remove();
+            }
+        });
     });
+
+    // Enhance download function to use smooth notification
+    window.downloadMarkdown = downloadMarkdown;
+    window.startNew = startNew;
+    window.fillExample = fillExample;
 </script>
 </body>
 </html>
