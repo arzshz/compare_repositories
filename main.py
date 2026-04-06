@@ -7,12 +7,19 @@ from typing import List, Optional
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from lxml import html
 from pydantic import BaseModel
 
 from config import GITHUB_TOKEN
 
 app = FastAPI(title="GitHub Repository Comparison API")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse("static/images/favicon.png")
 
 
 class RepositoryRequest(BaseModel):
