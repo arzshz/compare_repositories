@@ -3,3 +3,6 @@ httpx==0.28.1
 lxml==6.0.2
 pydantic==2.12.5
 uvicorn==0.40.0
+requests==2.33.1
+selenium==4.43.0
+webdriver-manager==4.0.2

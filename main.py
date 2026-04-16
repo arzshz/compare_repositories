@@ -12,6 +12,7 @@ from lxml import html
 from pydantic import BaseModel
 
 from config import GITHUB_TOKEN
+from get_contributers import GitHubScraperSelenium
 
 app = FastAPI(title="GitHub Repository Comparison API")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -462,26 +463,49 @@ async def fetch_repository_data(
     """Fetch all data for a single repository"""
     try:
         # Fetch all data concurrently
-        (
-            repo_info,
-            languages,
-            commits_info,
-            releases_info,
-            readme_status,
-            issues_count,
-            used_by_count,
-        ) = await asyncio.gather(
-            github_client.get_repo_info(owner, repo),
-            github_client.get_languages(owner, repo),
-            github_client.get_commits_info(owner, repo),
-            github_client.get_releases_info(owner, repo),
-            github_client.get_readme_status(owner, repo),
-            github_client.issues_count(owner, repo),
-            github_client.count_used_by(owner, repo),
-        )
+        # (
+        #     repo_info,
+        #     languages,
+        #     commits_info,
+        #     releases_info,
+        #     readme_status,
+        #     issues_count,
+        #     used_by_count,
+        # ) = await asyncio.gather(
+        #     github_client.get_repo_info(owner, repo),
+        #     github_client.get_languages(owner, repo),
+        #     github_client.get_commits_info(owner, repo),
+        #     github_client.get_releases_info(owner, repo),
+        #     github_client.get_readme_status(owner, repo),
+        #     github_client.issues_count(owner, repo),
+        #     github_client.count_used_by(owner, repo),
+        # )
 
         # Get contributors count separately
-        contributors_count = await github_client.get_contributors_count(owner, repo)
+        # with GitHubScraperSelenium(headless=True) as scraper:
+        #     contributors_count = await scraper.get_contributors_count(owner, repo)
+        # contributors_count = await github_client.get_contributors_count(owner, repo)
+
+        with GitHubScraperSelenium(headless=True) as scraper:
+            (
+                contributors_count,
+                repo_info,
+                languages,
+                commits_info,
+                releases_info,
+                readme_status,
+                issues_count,
+                used_by_count,
+            ) = await asyncio.gather(
+                scraper.get_contributors_count(owner, repo),
+                github_client.get_repo_info(owner, repo),
+                github_client.get_languages(owner, repo),
+                github_client.get_commits_info(owner, repo),
+                github_client.get_releases_info(owner, repo),
+                github_client.get_readme_status(owner, repo),
+                github_client.issues_count(owner, repo),
+                github_client.count_used_by(owner, repo),
+            )
 
         # Get last commit across all branches
         last_commit_all_branches = await github_client.get_all_branches_last_commit(

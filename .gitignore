@@ -4,3 +4,4 @@ test.py
 .pre-commit-config.yaml
 config.py
 __pycache__
+test.py
