@@ -19,7 +19,8 @@ app.include_router(info_route)
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
-    return FileResponse("static/images/favicon.ico")
+    file_path = os.path.join(os.path.dirname(__file__), "static/images/favicon.png")
+    return FileResponse(file_path)
 
 
 @app.get("/", response_class=HTMLResponse)
