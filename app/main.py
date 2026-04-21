@@ -10,7 +10,8 @@ from app.api.generate_pdf import router as generate_pdf_route
 from app.api.info import router as info_route
 
 app = FastAPI(title="GitHub Repository Comparison API")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+file_path = os.path.join(os.path.dirname(__file__), "static")
+app.mount("/static", StaticFiles(directory=file_path), name="static")
 app.include_router(compare_route)
 app.include_router(compare_json_route)
 app.include_router(generate_pdf_route)
