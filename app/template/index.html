@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GitHub Repository Comparison</title>
-    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    <link rel="icon" type="image/png" href="/app/static/images/favicon.png">
     <!-- Marked.js for markdown rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
@@ -192,25 +192,40 @@
             display: none;
         }
 
-        /* Two buttons in a row */
-        .button-row {
+        /* First row: Download Markdown + Download PDF */
+        .button-row-download {
             display: flex;
             gap: 15px;
             margin-top: 20px;
             margin-bottom: 10px;
         }
 
-        .button-row button {
+        .button-row-download button {
             flex: 1;
             margin: 0;
+        }
+
+        /* Second row: Compare New (full width) */
+        .button-row-new {
+            display: flex;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .button-row-new button {
+            width: 100%;
         }
 
         .btn-download {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        .btn-new {
+        .btn-pdf {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-new {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
         }
 
         /* Markdown preview */
@@ -403,12 +418,12 @@
                 font-size: 24px;
             }
 
-            .button-row {
+            .button-row-download {
                 flex-direction: column;
                 gap: 12px;
             }
 
-            .button-row button {
+            .button-row-download button {
                 width: 100%;
             }
 
@@ -466,10 +481,18 @@
         <h1>✅ Comparison Complete!</h1>
         <p class="subtitle" id="resultSubtitle"></p>
 
-        <div class="button-row">
+        <!-- First row: Download Markdown + Download PDF -->
+        <div class="button-row-download">
             <button class="btn-download" id="downloadBtn" onclick="downloadMarkdown()">
-                ⬇️ Download File
+                ⬇️ Download Markdown
             </button>
+            <button class="btn-pdf" id="downloadPdfBtn" onclick="downloadPDF()">
+                📄 Download PDF
+            </button>
+        </div>
+
+        <!-- Second row: Compare New Repositories (full width) -->
+        <div class="button-row-new">
             <button class="btn-new" id="newCompareBtn" onclick="startNew()">
                 🔄 Compare New Repositories
             </button>
@@ -622,20 +645,81 @@
         document.getElementById('repositories').value = repos.join('\n');
     }
 
-    function renderMarkdownPreview() {
-        const contentDiv = document.getElementById('markdownContent');
-        if (currentMarkdown && currentMarkdown.trim()) {
-            try {
-                const htmlContent = marked.parse(currentMarkdown);
-                contentDiv.innerHTML = htmlContent;
-            } catch (err) {
-                console.error('Markdown rendering error:', err);
-                contentDiv.innerHTML = '<div class="empty-preview">Error rendering markdown preview.</div>';
-            }
-        } else {
-            contentDiv.innerHTML = '<div class="empty-preview">No markdown content available.</div>';
+// Helper: remove the two specific <text> elements from an SVG document
+function removeUnwantedSvgElements(svgDoc) {
+    // 1. Remove the "Star History" text (x="50%", y="30")
+    const starHistoryText = svgDoc.querySelector('text[x="50%"][y="30"]');
+    if (starHistoryText && starHistoryText.textContent.trim() === "Star History") {
+        starHistoryText.remove();
+    }
+
+    // 2. Remove the "star-history.com" text (transform contains "translate(650 463.333)")
+    const domainText = Array.from(svgDoc.querySelectorAll('text')).find(el => {
+        const transform = el.getAttribute('transform');
+        return transform && transform.includes('translate(650') && transform.includes('463.333') &&
+               el.textContent.trim() === "star-history.com";
+    });
+    if (domainText) domainText.remove();
+
+    // 3. (Optional) Remove the PNG star icon – keep if you still want it gone
+    const starImage = svgDoc.querySelector('image[width="20"][height="20"][href^="data:image/png;base64"]');
+    if (starImage) starImage.remove();
+}
+
+// Process all Star History images – replace <img> with cleaned <svg>
+async function cleanStarHistoryImages(container) {
+    const images = container.querySelectorAll('img[src*="api.star-history.com/chart"]');
+    for (const img of images) {
+        const originalSrc = img.src;
+        try {
+            // Fetch the SVG as text
+            const response = await fetch(originalSrc);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const svgText = await response.text();
+
+            // Parse SVG into a DOM document
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+            const parserError = svgDoc.querySelector("parsererror");
+            if (parserError) throw new Error("SVG parsing failed");
+
+            // Remove unwanted elements
+            removeUnwantedSvgElements(svgDoc);
+
+            // Get the cleaned <svg> element
+            const cleanedSvg = svgDoc.documentElement;
+
+            // Preserve original dimensions if needed (copy width/height from original img)
+            const width = img.getAttribute('width') || cleanedSvg.getAttribute('width') || '100%';
+            const height = img.getAttribute('height') || cleanedSvg.getAttribute('height') || '100%';
+            cleanedSvg.setAttribute('width', width);
+            cleanedSvg.setAttribute('height', height);
+
+            // Replace the original <img> with the cleaned <svg>
+            img.replaceWith(cleanedSvg);
+        } catch (err) {
+            console.warn(`Failed to clean Star History image: ${originalSrc}`, err);
+            // Leave the original <img> untouched
         }
     }
+}
+
+// Main Markdown preview renderer (async)
+async function renderMarkdownPreview() {
+    const contentDiv = document.getElementById('markdownContent');
+    if (currentMarkdown && currentMarkdown.trim()) {
+        try {
+            const htmlContent = await marked.parse(currentMarkdown);
+            contentDiv.innerHTML = htmlContent;
+            await cleanStarHistoryImages(contentDiv); // uses updated remove function
+        } catch (err) {
+            console.error('Markdown rendering error:', err);
+            contentDiv.innerHTML = '<div class="empty-preview">Error rendering markdown preview.</div>';
+        }
+    } else {
+        contentDiv.innerHTML = '<div class="empty-preview">No markdown content available.</div>';
+    }
+}
 
     function downloadMarkdown() {
         if (!currentMarkdown) {
@@ -653,7 +737,57 @@
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
-        showSmoothNotification('File downloaded successfully!', 'success', true, 2500);
+        showSmoothNotification('Markdown file downloaded successfully!', 'success', true, 2500);
+    }
+
+    async function downloadPDF() {
+        if (!currentMarkdown) {
+            showSmoothNotification('No content to export. Please compare repositories first.', 'error', true, 3000);
+            return;
+        }
+
+        showSmoothNotification('Generating PDF... Please wait', 'loading', false);
+
+        try {
+            const response = await fetch('/generate-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    markdown: currentMarkdown,
+                    filename: currentFilename
+                })
+            });
+
+            if (!response.ok) {
+                let errorMsg = `HTTP ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.detail || errorMsg;
+                } catch (e) {}
+                throw new Error(errorMsg);
+            }
+
+            // Get the PDF blob
+            const blob = await response.blob();
+
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = currentFilename.replace('.md', '.pdf');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            updateNotificationToSuccess('PDF downloaded successfully!');
+
+        } catch (error) {
+            console.error('PDF generation error:', error);
+            updateNotificationToError(`Failed to generate PDF: ${error.message}`);
+        }
     }
 
     function startNew() {
@@ -723,10 +857,6 @@
         // Show loading notification that slides from bottom
         showSmoothNotification('Fetching GitHub repositories…', 'loading', false);
 
-        // status.className = 'status loading';
-        // status.innerHTML = '<span class="spinner"></span>Fetching repository data from GitHub...';
-        // status.style.display = 'block';
-
         try {
             const response = await fetch(API_URL, {
                 method: 'POST',
@@ -761,7 +891,6 @@
             status.style.display = 'none';
 
             // Transform the loading notification to success with smooth transition
-            // It gracefully changes from loading spinner to green success message at the same bottom position
             updateNotificationToSuccess(`Successfully compared ${data.repo_count} repositories!`);
 
             resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -834,6 +963,7 @@
 
     // Enhance download function to use smooth notification
     window.downloadMarkdown = downloadMarkdown;
+    window.downloadPDF = downloadPDF;
     window.startNew = startNew;
     window.fillExample = fillExample;
 </script>
