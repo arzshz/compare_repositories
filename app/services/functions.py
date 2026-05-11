@@ -181,28 +181,30 @@ async def fetch_repository_data(
 
         return {
             "url": url,
-            "name": repo_info["name"],
-            "owner": repo_info["owner"]["login"],
+            "name": repo_info.get("name", "-"),
+            "owner": repo_info.get("owner", {}).get("login", "-"),
             "is_forked": "Yes" if repo_info.get("fork", False) else "No",
-            "stars": repo_info["stargazers_count"],
-            "forks": repo_info["forks_count"],
-            "watchers": repo_info["subscribers_count"],
+            "stars": repo_info.get("stargazers_count", "-"),
+            "forks": repo_info.get("forks_count", "-"),
+            "watchers": repo_info.get("subscribers_count", "-"),
             "license": repo_info.get("license", {}).get("spdx_id", "N/A")
             if repo_info.get("license")
-            else "N/A",
+            else "-",
             "language": calculate_programming_language(languages),
             "contributors": contributors_count,
-            "open_issues": issues_count["open"],
-            "closed_issues": issues_count["closed"],
-            "open_pr": pull_requests_count["open"],
-            "closed_pr": pull_requests_count["closed"],
+            "open_issues": issues_count.get("open", "-"),
+            "closed_issues": issues_count.get("closed", "-"),
+            "open_pr": pull_requests_count.get("open", "-"),
+            "closed_pr": pull_requests_count.get("closed", "-"),
             "used_by": used_by_count,
-            "commits": commits_info["commits_count"],
-            "first_commit": format_date(commits_info["first_commit_date"]),
-            "last_commit_main": format_relative_date(commits_info["last_commit_date"]),
+            "commits": commits_info.get("commits_count", "-"),
+            "first_commit": format_date(commits_info.get("first_commit_date", "")),
+            "last_commit_main": format_relative_date(
+                commits_info.get("last_commit_date", "")
+            ),
             "last_commit_all": format_relative_date(last_commit_all_branches),
-            "releases": releases_info["releases_count"],
-            "last_release": format_date(releases_info["last_release_date"]),
+            "releases": releases_info.get("releases_count") or "-",
+            "last_release": format_date(releases_info.get("last_release_date", "")),
             "readme": readme_status,
         }
     except Exception as e:
@@ -213,12 +215,12 @@ async def fetch_repository_data(
 def calculate_programming_language(languages: dict) -> str:
     """Calculate programming language display based on the algorithm"""
     if not languages:
-        return "N/A"
+        return "-"
 
     # Calculate total bytes
     total_bytes = sum(languages.values())
     if total_bytes == 0:
-        return "N/A"
+        return "-"
 
     # Calculate percentages
     lang_percentages = [
@@ -230,7 +232,7 @@ def calculate_programming_language(languages: dict) -> str:
     lang_percentages.sort(key=lambda x: x[1], reverse=True)
 
     if not lang_percentages:
-        return "N/A"
+        return "-"
 
     # Rule 1: If largest > 80%, show only that language
     if lang_percentages[0][1] > 80:
@@ -252,22 +254,22 @@ def calculate_programming_language(languages: dict) -> str:
     return f"{lang_percentages[0][0]} {lang_percentages[0][1]:.1f}%"
 
 
-def format_date(date_str: Optional[str]) -> str:
+def format_date(date_str) -> str:
     """Format date as YYYY-MM-DD"""
     if not date_str:
-        return "N/A"
+        return "-"
 
     try:
         date = dt.fromisoformat(date_str.replace("Z", "+00:00"))
         return date.strftime("%Y-%m-%d")
     except Exception:
-        return "N/A"
+        return "-"
 
 
 def format_relative_date(date_str: Optional[str]) -> str:
     """Format date as relative time (e.g., '2 days ago')"""
     if not date_str:
-        return "N/A"
+        return "-"
 
     try:
         date = dt.fromisoformat(date_str.replace("Z", "+00:00"))
@@ -294,7 +296,7 @@ def format_relative_date(date_str: Optional[str]) -> str:
             years = int(seconds / 31536000)
             return f"{years} year{'s' if years != 1 else ''} ago"
     except Exception:
-        return "N/A"
+        return "-"
 
 
 def download_png(url: str, png_filename: str) -> str:

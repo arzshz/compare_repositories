@@ -60,35 +60,30 @@ class GitHubAPIClient:
                 return response.json()
             return {}
 
-    async def get_contributors_count(self, owner: str, repo: str) -> int:
-        """Fetch contributors count by scraping the repo page with lxml."""
-        url = f"https://github.com/{owner}/{repo}"
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(url, headers=self.headers, timeout=30.0)
+    @staticmethod
+    async def get_contributors_count(owner: str, repo: str):
+        url = (
+            f"https://github.com/{owner}/{repo}/contributors_list"
+            f"?current_repository={repo}&deferred=true"
+        )
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept": "text/html, application/xhtml+xml",
+        }
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            resp = await client.get(url, headers=headers, timeout=30.0)
             if resp.status_code != 200:
-                return 0
-            doc = html.fromstring(resp.text)
+                return "-"
 
-            # 1) Prefer the <span title="N" class="Counter ..."> inside the Contributors link
-            span_title = doc.xpath(
-                '//h2[.//a[contains(@href,"/graphs/contributors") and contains(.,"Contributors")]]'
-                '//span[contains(@class,"Counter") and @title]/@title'
-            )
-            if span_title:
-                try:
-                    return int(span_title[0].replace(",", ""))
-                except ValueError:
-                    pass
-
-            # 2) Fallback: the "+ N contributors" link text
-            alt_text = doc.xpath(
-                '//a[contains(@href,"/graphs/contributors") and contains(normalize-space(.),"+")]/text()'
-            )
-            if alt_text:
-                m = re.search(r"(\d[\d,]*)", alt_text[0])
-                if m:
-                    return int(m.group(1).replace(",", ""))
-            return 0
+        tree = html.fromstring(resp.content)
+        spans = tree.xpath(
+            f'//a[contains(@href,"/{owner}/{repo}/graphs/contributors")]'
+            '//span[contains(@class,"Counter")]'
+        )
+        if spans:
+            raw = spans[0].get("title", "") or spans[0].text_content().strip()
+            return raw.replace(",", "")
+        return "-"
 
     async def get_commits_info(self, owner: str, repo: str) -> dict:
         """Fetch commit information including total count and dates"""
@@ -102,7 +97,7 @@ class GitHubAPIClient:
                 timeout=30.0,
             )
 
-            last_commit_date = None
+            last_commit_date = {}
 
             if response_latest.status_code == 200 and response_latest.json():
                 latest_commit = response_latest.json()[0]
@@ -125,6 +120,8 @@ class GitHubAPIClient:
                     )
                     if count_response.status_code == 200:
                         commits_count = len(count_response.json())
+            if not commits_count:
+                commits_count = {}
 
             return {
                 "first_commit_date": first_commit_date,
@@ -132,12 +129,12 @@ class GitHubAPIClient:
                 "commits_count": commits_count,
             }
 
-    async def get_first_commit_date(self, owner: str, repo: str) -> Optional[str]:
+    async def get_first_commit_date(self, owner: str, repo: str):
         async with httpx.AsyncClient(headers=self.headers, timeout=30.0) as client:
             # repo to get default branch
             r = await client.get(f"{self.base_url}/repos/{owner}/{repo}")
             if r.status_code != 200:
-                return None
+                return {}
             default_branch = r.json().get("default_branch", "master")
 
             # request first page with per_page=1 to inspect Link header
@@ -146,7 +143,7 @@ class GitHubAPIClient:
                 params={"sha": default_branch, "per_page": 1},
             )
             if r.status_code != 200:
-                return None
+                return {}
 
             link = r.headers.get("Link", "")
             if 'rel="last"' in link:
@@ -154,17 +151,17 @@ class GitHubAPIClient:
                 if m:
                     last_page = int(m.group(1))
                 else:
-                    return None
+                    return {}
                 # fetch the last page with per_page=1 to get the oldest commit
                 r = await client.get(
                     f"{self.base_url}/repos/{owner}/{repo}/commits",
                     params={"sha": default_branch, "per_page": 1, "page": last_page},
                 )
                 if r.status_code != 200:
-                    return None
+                    return {}
                 commits = r.json()
                 if not commits:
-                    return None
+                    return {}
                 # commit date (committer.date if available, else author.date)
                 c = commits[0].get("commit", {})
                 date = c.get("committer", {}).get("date") or c.get("author", {}).get(
@@ -178,10 +175,10 @@ class GitHubAPIClient:
                     params={"sha": default_branch, "per_page": 100},
                 )
                 if r.status_code != 200:
-                    return None
+                    return {}
                 commits = r.json()
                 if not commits:
-                    return None
+                    return {}
                 c = commits[-1].get("commit", {})
                 return c.get("committer", {}).get("date") or c.get("author", {}).get(
                     "date"
@@ -226,7 +223,10 @@ class GitHubAPIClient:
                     if date:
                         if newest is None or date > newest:
                             newest = date
-                if not refs["pageInfo"]["hasNextPage"]:
+                if not refs["pageInfo"]["hasNextPage"] and newest:
+                    break
+                elif not refs["pageInfo"]["hasNextPage"]:
+                    newest = {}
                     break
                 after = refs["pageInfo"]["endCursor"]
             return newest
@@ -240,8 +240,8 @@ class GitHubAPIClient:
                 timeout=30.0,
             )
 
-            releases_count = 0
-            last_release_date = None
+            releases_count = {}
+            last_release_date = {}
 
             if response.status_code == 200:
                 releases = response.json()
@@ -257,14 +257,13 @@ class GitHubAPIClient:
 
                 # Get last release date
                 if releases:
-                    last_release_date = releases[0].get("published_at")
-
+                    last_release_date = releases[0].get("published_at", {})
             return {
                 "releases_count": releases_count,
                 "last_release_date": last_release_date,
             }
 
-    async def get_readme_status(self, owner: str, repo: str) -> str:
+    async def get_readme_status(self, owner: str, repo: str):
         """Check README status"""
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -307,6 +306,10 @@ class GitHubAPIClient:
             open_count, closed_count = await asyncio.gather(
                 _count("open"), _count("closed")
             )
+            if not open_count:
+                open_count = ""
+            if not closed_count:
+                closed_count = ""
             return {"open": open_count, "closed": closed_count}
 
     async def get_pull_requests_count(self, owner: str, repo: str) -> dict:
@@ -339,19 +342,19 @@ class GitHubAPIClient:
                     detail=f"GitHub API error: {response.text}",
                 )
 
-            data = response.json().get("data") or {}
-            open_count = data.get("open", {}).get("issueCount", 0)
-            closed_count = data.get("closed", {}).get("issueCount", 0)
+            data = response.json().get("data", {})
+            open_count = data.get("open", {}).get("issueCount", "")
+            closed_count = data.get("closed", {}).get("issueCount", "")
             return {"open": open_count, "closed": closed_count}
 
     @staticmethod
-    async def count_used_by(owner: str, repo: str) -> Optional[int]:
+    async def count_used_by(owner: str, repo: str):
         url = f"https://github.com/{owner}/{repo}/network/dependents?dependent_type=REPOSITORY"
         headers = {"User-Agent": "python-httpx"}
         async with httpx.AsyncClient(headers=headers, timeout=30.0) as client:
             r = await client.get(url)
             if r.status_code != 200:
-                return 0
+                return "-"
             doc = html.fromstring(r.text)
             # find the selected link under the Box-header that shows the Repositories count
             texts = doc.xpath(
@@ -366,7 +369,7 @@ class GitHubAPIClient:
             m = re.search(r"([\d,]+)\s*Repositories", combined)
             if not m:
                 m = re.search(r"([\d,]+)", combined)
-            return int(m.group(1).replace(",", "")) if m else 0
+            return int(m.group(1).replace(",", "")) if m else "-"
 
 
 # from selenium import webdriver
