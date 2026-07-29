@@ -20,8 +20,9 @@ async def generate_pdf(request: PDFRequest):
     pdf_path, chart_path = "", ""
     try:
         # Convert markdown to HTML
-        markdown_parts = request.markdown.split("![Star History Chart]")
-        html_content = markdown.markdown(markdown_parts[0], extensions=["tables"])
+        # markdown_parts = request.markdown.split("![Star History Chart]")
+        # html_content = markdown.markdown(markdown_parts[0], extensions=["tables"])
+        html_content = markdown.markdown(request.markdown, extensions=["tables"])
 
         # Generate PDF filename and full path in files dir
         pdf_filename = request.filename.replace(".md", ".pdf")
@@ -30,8 +31,8 @@ async def generate_pdf(request: PDFRequest):
         )
 
         # Download Chart
-        png_filename = request.filename.replace(".md", ".png")
-        chart_path = download_png(markdown_parts[1][1:-1], png_filename)
+        # png_filename = request.filename.replace(".md", ".png")
+        # chart_path = download_png(markdown_parts[1][1:-1], png_filename)
 
         # Generate PDF into pdf_path
         markdown_to_pdf(html_content, pdf_path, chart_path)

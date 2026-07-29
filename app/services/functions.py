@@ -505,11 +505,13 @@ def markdown_to_pdf(html, output_path="output.pdf", image_path=""):
     </head>
     <body>
         {html}
-        <img src="{image_path}"
-            style="display:block; max-width:100%; page-break-before: always;">
-
     </body>
     </html>
     """
-
+    # image = """    <body>
+    #     {html}
+    #     <img src="{image_path}"
+    #         style="display:block; max-width:100%; page-break-before: always;">
+    #
+    # </body>"""
     HTML(string=html_template, base_url=".").write_pdf(output_path)
