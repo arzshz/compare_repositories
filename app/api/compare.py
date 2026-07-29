@@ -50,8 +50,9 @@ async def compare_repositories(request: RepositoryRequest):
     repos_data = await asyncio.gather(*tasks)
 
     # Generate markdown
-    markdown_content, chart = generate_markdown_table(repos_data)
-    markdown_content += f"\n![Star History Chart]({chart})"
+    markdown_content = generate_markdown_table(repos_data)
+    # markdown_content, chart = generate_markdown_table(repos_data)
+    # markdown_content += f"\n![Star History Chart]({chart})"
 
     # Save to file
     filename = f"repo_comparison_{dt.now().strftime('%Y%m%d_%H%M%S')}.md"

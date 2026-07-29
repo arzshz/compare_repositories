@@ -50,8 +50,9 @@ async def compare_repositories_json(request: RepositoryRequest):
     repos_data = await asyncio.gather(*tasks)
 
     # Generate markdown
-    markdown_content, chart = generate_markdown_table(repos_data)
-    markdown_content += f"\n![Star History Chart]({chart})"
+    markdown_content = generate_markdown_table(repos_data)
+    # markdown_content, chart = generate_markdown_table(repos_data)
+    # markdown_content += f"\n![Star History Chart]({chart})"
 
     # Return JSON with markdown content
     return {

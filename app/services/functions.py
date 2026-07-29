@@ -108,16 +108,17 @@ def generate_markdown_table(repos_data: List[dict]) -> Tuple[str, str]:
         markdown_lines.append("| " + " | ".join(row) + " |")
 
     # Build star-history chart query (concatenated repos)
-    chart = "https://api.star-history.com/chart?repos="
-    chart += "%2C".join(
-        f"{repo['owner']}/{repo['name']}"
-        for repo in repos_data
-        if "error" not in repo and repo.get("owner") and repo.get("name")
-    )
-    chart += "&type=date&legend=top-left"
+    # chart = "https://api.star-history.com/chart?repos="
+    # chart += "%2C".join(
+    #     f"{repo['owner']}/{repo['name']}"
+    #     for repo in repos_data
+    #     if "error" not in repo and repo.get("owner") and repo.get("name")
+    # )
+    # chart += "&type=date&legend=top-left"
 
     markdown = "# GitHub Repository Comparison\n\n" + "\n".join(markdown_lines) + "\n"
-    return markdown, chart
+    # return markdown, chart
+    return markdown
 
 
 async def fetch_repository_data(
